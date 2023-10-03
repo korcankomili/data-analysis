@@ -53,6 +53,9 @@ def perform_data_checks(df):
 
 def plot_linear_regressions(df, x_axis, y_axis, ols = True): 
     df = df.copy()  
+
+    fig, ax = plt.subplots(figsize=(12, 6)) 
+
     if ols == True:
         plot = px.scatter(df,
                           x = x_axis,
@@ -67,7 +70,7 @@ def plot_linear_regressions(df, x_axis, y_axis, ols = True):
                           y = y_axis,
                           size = y_axis, 
                         )
-    
+    ax.set_title("Linear Regression", fontsize=15)
     plot.update_layout(title_text=f"Relation of {y_axis} with {x_axis}")
     return plot
 
@@ -87,7 +90,7 @@ def plot_correlation_heatmap(df):
                 annot=True,
                 ax=ax)
     
-    plot.set_title("Correlation Matrix", fontsize=15)
+    ax.set_title("Correlation Matrix", fontsize=15)
     
     return plot
 
@@ -190,10 +193,11 @@ def power_regression(df, x_axis, y_axis):
 
 
 def plot_combo_box(df, x_axis, y1, y2, sort_by):
-       
+
     df = df.copy()   
-    
     df = df.sort_values(by = sort_by, ascending = True)
+
+    fig, ax = plt.subplots(figsize=(12, 6)) 
 
     fig = make_subplots(specs=[[{"secondary_y": True}]])
 
@@ -215,13 +219,13 @@ def plot_combo_box(df, x_axis, y1, y2, sort_by):
     )
 
 
-    fig.update_layout(
-        title=f"{y1} and {y2}",
+    fig.update_layout( 
         xaxis_title = x_axis, 
         yaxis=dict(showgrid=False, zeroline=False, title=y1),
         yaxis2=dict(showgrid=False, zeroline=False, title=y2, side="right", overlaying="y"),
     )
-
+    
+    ax.set_title(f"{y1} and {y2}")
     fig.show()
 
 
