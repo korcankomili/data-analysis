@@ -6,7 +6,9 @@ from sklearn.linear_model import LinearRegression
 import plotly.express as px
 from plotly.subplots import make_subplots
 import plotly.graph_objs as go
+import plotly.io as pio
 
+pio.renderers.default = "svg"
 
 def fetch_csv(data_path): 
     """
@@ -51,28 +53,30 @@ def perform_data_checks(df):
             Outliers found in column '{col}': """)
 
 
-def plot_linear_regressions(df, x_axis, y_axis, ols = True): 
-    df = df.copy()  
+import seaborn as sns
+import matplotlib.pyplot as plt
+from scipy import stats
 
-    fig, ax = plt.subplots(figsize=(12, 6)) 
-
-    if ols == True:
-        plot = px.scatter(df,
-                          x = x_axis,
-                          y = y_axis,
-                          trendline = "ols",
-                          size = y_axis, 
-                          trendline_color_override = 'black',
-                        )
+def plot_linear_regressions(df, x_axis, y_axis, ols=True):
+    plt.figure(figsize=(12, 6))
+    
+    if ols:
+        sns.regplot(data=df, x=x_axis, y=y_axis, color='black', ci=None)
+        
+        # Regresyon denklemi ve R² değeri hesaplama
+        x = df[x_axis]
+        y = df[y_axis]
+        slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+        equation = f"{y_axis} = {slope:.2f}x{x_axis} + {intercept:.2f} with R² = {r_value**2:.2f}"
+        
     else:
-        plot = px.scatter(df,
-                          x = x_axis,
-                          y = y_axis,
-                          size = y_axis, 
-                        )
-    ax.set_title("Linear Regression", fontsize=15)
-    plot.update_layout(title_text=f"Relation of {y_axis} with {x_axis}")
-    return plot
+        sns.scatterplot(data=df, x=x_axis, y=y_axis, size=y_axis)
+    
+    plt.title(f"{equation}", fontsize=10)
+    plt.xlabel(x_axis)
+    plt.ylabel(y_axis)
+    plt.show()
+
 
 
 def plot_correlation_heatmap(df): 
@@ -191,70 +195,49 @@ def power_regression(df, x_axis, y_axis):
     return intercept, slope
 
 
-
 def plot_combo_box(df, x_axis, y1, y2, sort_by):
+    df = df.copy()
+    df = df.sort_values(by=sort_by, ascending=True)
 
-    df = df.copy()   
-    df = df.sort_values(by = sort_by, ascending = True)
+    plt.figure(figsize=(12, 6))
 
-    fig, ax = plt.subplots(figsize=(12, 6)) 
+    ax = sns.barplot(x=x_axis, y=y1, data=df, color="silver")
+    ax2 = ax.twinx()
+    sns.lineplot(x=x_axis, y=y2, data=df, ax=ax2, color="blue")
 
-    fig = make_subplots(specs=[[{"secondary_y": True}]])
-
-    fig.add_trace(
-        go.Bar(y=df[y1], 
-               x=df[x_axis], 
-               name=y1, 
-               orientation="v", 
-               marker=dict(color="silver")),
-        secondary_y=False,
-    )
-
-    fig.add_trace(
-        go.Scatter(y=df[y2], 
-                   x=df[x_axis], 
-                   name=y2, 
-                   line=dict(color="blue")),
-        secondary_y=True,
-    )
+    ax.set_ylabel(y1)
+    ax2.set_ylabel(y2)
+    ax.set_xlabel(x_axis)
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
 
 
-    fig.update_layout( 
-        xaxis_title = x_axis, 
-        yaxis=dict(showgrid=False, zeroline=False, title=y1),
-        yaxis2=dict(showgrid=False, zeroline=False, title=y2, side="right", overlaying="y"),
-    )
-    
-    ax.set_title(f"{y1} and {y2}")
-    fig.show()
+    plt.title(f"{y1} and {y2}")
+    plt.show()
 
 
-def plot_histogram(df, bin_by, bin_size, bars_by): 
+def plot_histogram(df, bin_by, bin_size, bars_by,  color='black'):
     """
-        Takes df and some parameters \n
-        Returns a dynamic histogram
+    Takes df and some parameters
+    Returns a dynamic histogram
 
-        bin_by: the column your bins will be created from
-        bin_size: similar to Tableau, not the bin count but the bin size
-        bars_by: the columns your bars will be generated with
+    bin_by: the column your bins will be created from
+    bin_size: similar to Tableau, not the bin count but the bin size
+    bars_by: the columns your bars will be generated with
     """
     
     df = df.copy()
 
-    bins = pd.cut(df[bin_by], 
-                  bins=np.arange(0, df[bin_by].max() + bin_size, bin_size))
-    
-    df = df.groupby(bins)[bars_by].sum().reset_index()
-    
-    df['Bins'] = df.index.astype(str)
-    
-    df['perc_total'] = (df[bars_by] / df[bars_by].sum()* 100) .round(2).astype(str)
-    df['perc_total'] = "% " + df['perc_total']
-    
-    fig = px.bar(df, 
-                 x='Bins', 
-                 y=bars_by, 
-                 text='perc_total', 
-                 title=f"{bars_by} by {bin_by} (Bin Size: {bin_size})")
-    
-    fig.show()
+    bins = pd.cut(df[bin_by], bins=int((df[bin_by].max() - df[bin_by].min()) / bin_size), include_lowest=True)
+
+    grouped_df = df.groupby(bins)[bars_by].sum().reset_index()
+    grouped_df['Bins'] = grouped_df.index.astype(str)
+    grouped_df['perc_total'] = (grouped_df[bars_by] / grouped_df[bars_by].sum() * 100).round(2).astype(str) + "%"
+
+    plt.figure(figsize=(12, 6))
+    sns.barplot(data=grouped_df, x='Bins', y=bars_by, color=color)
+    plt.title(f"{bars_by} by {bin_by} (Bin Size: {bin_size})")
+    plt.xlabel(bin_by)
+    plt.ylabel(bars_by)
+    plt.xticks(rotation=90)
+
+    plt.show() 
