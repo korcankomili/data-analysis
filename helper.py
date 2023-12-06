@@ -84,17 +84,19 @@ def plot_correlation_heatmap(df):
         Takes a df, \n
         Returns a graph for the correlation matrix of the numeric columns
     """
-    fig, ax = plt.subplots(figsize=(12, 6)) 
+    fig, ax = plt.subplots(figsize=(18, 10)) 
     
     df = df.copy() 
     corr_matrix = df.select_dtypes(include=['number']).corr()
     
-    plot = sns.heatmap(corr_matrix,
-                cmap="RdBu",
-                annot=True,
-                ax=ax)
+    # Define a custom color palette with darkest red at -1 and darkest blue at 1
+    custom_cmap = sns.diverging_palette(10, 250, as_cmap=True)
     
-    ax.set_title("Correlation Matrix", fontsize=15)
+    plot = sns.heatmap(corr_matrix,
+                       cmap=custom_cmap,
+                       annot=True,
+                       vmin=-1, vmax=1,  # Set the color scale range
+                       ax=ax)
     
     return plot
 
